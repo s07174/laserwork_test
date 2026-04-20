@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>RDWorks 雷射切割全流程模擬測驗</title>
+    <style>
+        body { display: flex; flex-direction: column; align-items: center; background-color: #f0f0f0; font-family: "Microsoft JhengHei", sans-serif; margin: 0; padding: 20px; }
+        
+        #main-view {
+            position: relative; width: 1000px; height: 563px;
+            background-image: url('畫面1.png'); background-size: 100% 100%;
+            border: 3px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+
+        .hotspot { position: absolute; cursor: pointer; background: rgba(255, 0, 0, 0.4); border: 1px solid red; z-index: 10; }
+        .modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+
+        /* 任務一熱區 */
+        #btn-file { top: 15px; left: 3px; width: 30px; height: 15px; }
+        #menu-overlay { display: none; position: absolute; top: 48px; left: 5px; width: 200px; z-index: 20; }
+        #file-browser { width: 800px; height: 450px; background: url('畫面1-2.png') no-repeat; background-size: contain; }
+        #btn-select-file { top: 205px; left: 25px; width: 100px; height: 15px; }
+        #btn-confirm-open { bottom: 70px; right: 43px; width: 82px; height: 22px; }
+
+        /* 任務二熱區 */
+        #btn-download { display: none; bottom: 136px; right: 10px; width: 45px; height: 22px; }
+        #name-dialog { width: 320px; height: 160px; background: url('畫面3.png') no-repeat; background-size: contain; }
+        #success-dialog { width: 210px; height: 190px; background: url('畫面4.png') no-repeat; background-size: contain; }
+        #overwrite-dialog { width: 290px; height: 170px; background: url('畫面5.png') no-repeat; background-size: contain; }
+
+        /* 任務三熱區 */
+        #btn-origin { top: 85%; left: 74%; width: 3.5%; height:4.4%; display: none; }
+        #btn-frame { top: 84.5%; left: 80.6%; width: 3.5%; height: 4.5%; display: none; }
+
+        /* 任務四熱區 */
+        #btn-exhaust { top: 3.4%; left: 70.5%; width: 2.7%; height: 4%; display: none; }
+        #btn-air { top: 9.5%; left: 67.5%; width: 5.1%; height: 5.5%; display: none; }
+
+        /* 任務五熱區：啟動按鈕 */
+        #btn-start-laser { top: 84.5%; left: 87.6%; width: 3.2%; height: 5%; display: none; }
+
+        /* 影片視窗 */
+        #video-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200; background: #000; border: 4px solid #fff; text-align: center; }
+
+        .hint-panel { margin-top: 20px; padding: 15px; background: white; border-left: 10px solid #2980b9; width: 800px; text-align: center; }
+        #msg { font-size: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="hint-panel">
+        <div id="msg">步驟 1：請開啟雷射切割檔案 (點擊「文件」-「打開」)</div>
+    </div>    
+    
+    <div id="main-view">
+        <div id="btn-file" class="hotspot" onclick="clickFile()"></div>
+        <div id="menu-overlay">
+            <img src="畫面2.png" style="width:100%">
+            <div class="hotspot" onclick="openFileBrowser()" style="top:58px; left:0; width:100%; height:20px;"></div>
+        </div>
+        <div id="file-browser" class="modal">
+            <div id="btn-select-file" class="hotspot" onclick="selectTestFile()"></div>
+            <div id="btn-confirm-open" class="hotspot" onclick="confirmOpenFile()"></div>
+        </div>
+
+        <div id="btn-download" class="hotspot" onclick="showNameDialog()"></div>
+        <div id="name-dialog" class="modal">
+            <input type="text" id="input-filename" style="position:absolute; top:76px; left:125px; width:130px;">
+            <div class="hotspot" onclick="handleSuccess()" style="bottom: 15px; left: 70px; width: 75px; height: 30px;"></div>
+        </div>
+        <div id="success-dialog" class="modal">
+            <div class="hotspot" onclick="handleOverwriteAlert()" style="bottom: 15px; left: 80px; width: 105px; height: 30px;"></div>
+        </div>
+        <div id="overwrite-dialog" class="modal">
+            <div class="hotspot" onclick="startTask3()" style="bottom: 15px; left: 40px; width: 105px; height: 30px;"></div>
+        </div>
+
+        <div id="btn-origin" class="hotspot" onclick="doOrigin()"></div>
+        <div id="btn-frame" class="hotspot" onclick="doFrame()"></div>
+
+        <div id="btn-exhaust" class="hotspot" onclick="switchExhaust()"></div>
+        <div id="btn-air" class="hotspot" onclick="switchAir()"></div>
+
+        <div id="btn-start-laser" class="hotspot" onclick="doFinalLaser()"></div>
+
+        <div id="video-modal">
+            <video id="player" width="700" height="400" controls></video>
+            <br><button id="btn-video-close" style="padding:10px; width:100%; cursor:pointer;"></button>
+        </div>
+    </div>
+
+
+
+    <script>
+        let currentStep = 1;
+        let isFileSelected = false;
+        let isOrigined = false;
+
+        const player = document.getElementById('player');
+        const videoModal = document.getElementById('video-modal');
+        const closeBtn = document.getElementById('btn-video-close');
+
+        // 任務一
+        function clickFile() { if(currentStep === 1) document.getElementById('menu-overlay').style.display = 'block'; }
+        function openFileBrowser() {
+            document.getElementById('menu-overlay').style.display = 'none'; 
+            // 1. 先顯示檔案瀏覽視窗 (畫面1-2)
+            document.getElementById('file-browser').style.display = 'block';
+            
+            // 2. 視窗出現後延遲彈出 alert，確保學生能看到背景視窗
+            setTimeout(() => {
+                alert("請選取 rld 雷切檔");
+                document.getElementById('msg').innerText = "提示：請在清單中選取「test.rld」";
+            }, 100);
+        }
+        function selectTestFile() { document.getElementById('file-browser').style.backgroundImage = "url('畫面1-2-2.png')"; isFileSelected = true; }
+        function confirmOpenFile() {
+            if(!isFileSelected) return alert("請先選取檔案！");
+            document.getElementById('file-browser').style.display = 'none';
+            document.getElementById('main-view').style.backgroundImage = "url('畫面1-3.png')";
+            currentStep = 2;
+            document.getElementById('btn-download').style.display = 'block';
+            document.getElementById('msg').innerText = "步驟 2：請按下右下角「下載」按鈕";
+        }
+
+        // 任務二
+        function showNameDialog() { 
+            if(currentStep === 2) {
+                document.getElementById('name-dialog').style.display = 'block'; 
+                // 新增：出現畫面3後彈出 alert
+                setTimeout(() => {
+                    alert("請輸入班級座號作為檔名");
+                }, 100);
+            }
+        }
+        function handleSuccess() { if(document.getElementById('input-filename').value.trim()==="") return alert("請輸入名稱"); document.getElementById('name-dialog').style.display = 'none'; document.getElementById('success-dialog').style.display = 'block'; }
+        function handleOverwriteAlert() { document.getElementById('success-dialog').style.display = 'none'; alert("注意：若有重名，請一律選擇[是]"); document.getElementById('overwrite-dialog').style.display = 'block'; }
+        
+        // 任務三
+        function startTask3() {
+            document.getElementById('overwrite-dialog').style.display = 'none';
+            currentStep = 3;
+            document.getElementById('main-view').style.backgroundImage = "url('畫面6.png')";
+            document.getElementById('btn-download').style.display = 'none';
+            document.getElementById('btn-origin').style.display = 'block';
+            document.getElementById('btn-frame').style.display = 'block';
+            alert("步驟 3 提醒：請將材料正確放在雷切機平台上。");
+            document.getElementById('msg').innerText = "步驟 3、4：請在控制面板按下「定位」及「邊框」";
+        }
+        function doOrigin() { isOrigined = true; alert("✅ 「定位」完成，請再按「邊框」"); document.getElementById('msg').innerText = "步驟 3：請按下「邊框」檢查範圍"; }
+        
+        function doFrame() {
+            if(!isOrigined) return alert("請先按下「定位」！");
+            playVideo('影片1.mp4', "走邊框確認完成，進入下一步", startTask4);
+        }
+
+        function playVideo(src, btnText, callback) {
+            player.src = src;
+            videoModal.style.display = 'block';
+            closeBtn.innerText = btnText;
+            closeBtn.onclick = function() {
+                player.pause();
+                videoModal.style.display = 'none';
+                callback();
+            };
+            player.play();
+        }
+
+        // 任務四
+        function startTask4() {
+            currentStep = 4;
+            document.getElementById('btn-origin').style.display = 'none';
+            document.getElementById('btn-frame').style.display = 'none';
+            document.getElementById('btn-exhaust').style.display = 'block';
+            document.getElementById('msg').innerText = "步驟 5：請開啟上方控制盒的「排廢氣」開關";
+        }
+
+        function switchExhaust() {
+            document.getElementById('main-view').style.backgroundImage = "url('畫面6-2.png')";
+            document.getElementById('btn-exhaust').style.display = 'none';
+            document.getElementById('btn-air').style.display = 'block';
+            document.getElementById('msg').innerText = "步驟 4：請開啟「吹氣」開關";
+        }
+
+        function switchAir() {
+            document.getElementById('main-view').style.backgroundImage = "url('畫面6-3.png')";
+            document.getElementById('btn-air').style.display = 'none';
+            alert("✅ 系統就緒！");
+            startTask5();
+        }
+
+        // 任務五
+        function startTask5() {
+            currentStep = 5;
+            document.getElementById('btn-start-laser').style.display = 'block'; // 顯示啟動按鈕
+            document.getElementById('msg').innerText = "步驟 7：請按下控制面板右下角的「啟動」開始雷切";
+        }
+
+        function doFinalLaser() {
+            document.getElementById('btn-start-laser').style.display = 'none';
+            playVideo('影片2.mp4', "完成測驗，關閉視窗", function() {
+                alert("🎉 恭喜完成雷射切割全流程操作測驗！");
+                document.getElementById('msg').innerText = "測驗圓滿結束！";
+            });
+        }
+    </script>
+</body>
+</html>
