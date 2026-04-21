@@ -11,8 +11,7 @@
             background-image: url('畫面1.png'); background-size: 100% 100%;
             border: 3px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.3);
         }
-
-        .hotspot { position: absolute; cursor: pointer; background: rgba(255, 0, 0, 0); z-index: 10; }
+	.hotspot { position: absolute; cursor: pointer; z-index: 10; transition: all 0.3s ease; }
         .modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
 
         /* 任務一熱區 */
@@ -37,19 +36,66 @@
         #btn-air { top: 9.5%; left: 67.5%; width: 5.1%; height: 5.5%; display: none; }
 
         /* 任務五熱區：啟動按鈕 */
-        #btn-start-laser { top: 84.5%; left: 87.6%; width: 3.2%; height: 5%; display: none; }
+        #btn-start-laser { top: 90%; left: 88%; width: 3.2%; height: 5%; display: none; }
 
         /* 影片視窗 */
         #video-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200; background: #000; border: 4px solid #fff; text-align: center; }
 
         .hint-panel { margin-top: 20px; padding: 15px; background: white; border-left: 10px solid #2980b9; width: 800px; text-align: center; }
         #msg { font-size: 20px; font-weight: bold; }
+
+	/* 指示燈通用樣式 */
+	.indicator-light {
+    	position: absolute;
+    	width: 15px;  /* 根據圖片燈的大小調整 */
+    	height: 15px;
+    	border-radius: 50%;
+    	background: rgba(255, 255, 0, 0.8);
+    	display: none; /* 預設隱藏 */
+    	z-index: 5;
+    	pointer-events: none; /* 讓光影不會擋住滑鼠點擊 */
+    	animation: lightGlow 1.2s infinite ease-in-out;
+	}
+
+	/* 調整這兩個座標，直到光暈對準圖片上的燈 */
+	#light-exhaust {
+    	top: 5%;  /* 排廢氣按鈕右側的燈位置 */
+    	left: 82.5%; 
+    	box-shadow: 0 0 15px 5px rgba(255, 255, 0, 0.9);
+	}
+
+	#light-air {
+    	top: 10%; /* 吹氣按鈕右側的燈位置 */
+    	left: 82.5%;
+    	box-shadow: 0 0 15px 5px rgba(255, 255, 0, 0.9);
+	}
+
+	/* 呼吸燈動畫保持不變 */
+	@keyframes lightGlow {
+    	0% { opacity: 1; transform: scale(1); }
+    	50% { opacity: 0.5; transform: scale(1.1); }
+    	100% { opacity: 1; transform: scale(1); }
+	}
+
+	/* 讓按鈕閃爍引導點擊 (不帶黃色背景，只用邊框或微光) */
+	 #btn-origin, #btn-frame, #btn-exhaust, #btn-air {
+    	border: 2px solid rgba(255, 255, 0, 0.5);
+    	animation: buttonHint 1s infinite alternate;
+	}
+
+	@keyframes buttonHint {
+    	from { background: rgba(255, 255, 0, 0); }
+    	to { background: rgba(255, 255, 0, 0.2); }
+	}
+
+
+
     </style>
 </head>
 <body>
 
     <div class="hint-panel">
-        <div id="msg">步驟 1：請開啟雷射切割檔案 (點擊「文件」-「打開」)</div>
+        <div id="msg">步驟 1：請開啟雷切rld檔案 (點擊「文件」-「打開」)</div>
     </div>    
     
     <div id="main-view">
@@ -87,6 +133,8 @@
             <video id="player" width="700" height="400" controls></video>
             <br><button id="btn-video-close" style="padding:10px; width:100%; cursor:pointer;"></button>
         </div>
+	<div id="light-exhaust" class="indicator-light"></div>
+	<div id="light-air" class="indicator-light"></div>
     </div>
 
 
@@ -130,11 +178,12 @@
                 // 新增：出現畫面3後彈出 alert
                 setTimeout(() => {
                     alert("請輸入班級座號作為檔名");
+                    document.getElementById('msg').innerText = "提示：點擊輸入欄位後(會出現游標)，在欄位輸入班級座號";
                 }, 100);
             }
         }
         function handleSuccess() { if(document.getElementById('input-filename').value.trim()==="") return alert("請輸入名稱"); document.getElementById('name-dialog').style.display = 'none'; document.getElementById('success-dialog').style.display = 'block'; }
-        function handleOverwriteAlert() { document.getElementById('success-dialog').style.display = 'none'; alert("注意：若有重名，請一律選擇[是]"); document.getElementById('overwrite-dialog').style.display = 'block'; }
+        function handleOverwriteAlert() { document.getElementById('success-dialog').style.display = 'none'; alert("注意：若有重名，請一律選擇[是]"); document.getElementById('overwrite-dialog').style.display = 'block'; document.getElementById('msg').innerText = "注意：若有重覆傳檔，請一律選擇「是」"; }
         
         // 任務三
         function startTask3() {
@@ -147,7 +196,7 @@
             alert("步驟 3 提醒：請將材料正確放在雷切機平台上。");
             document.getElementById('msg').innerText = "步驟 3、4：請在控制面板按下「定位」及「邊框」";
         }
-        function doOrigin() { isOrigined = true; alert("✅ 「定位」完成，請再按「邊框」"); document.getElementById('msg').innerText = "步驟 3：請按下「邊框」檢查範圍"; }
+        function doOrigin() { isOrigined = true; alert("✅ 「定位」完成，請再按「邊框」"); document.getElementById('msg').innerText = "步驟 4：請按下「邊框」檢查範圍"; }
         
         function doFrame() {
             if(!isOrigined) return alert("請先按下「定位」！");
@@ -175,19 +224,33 @@
             document.getElementById('msg').innerText = "步驟 5：請開啟上方控制盒的「排廢氣」開關";
         }
 
-        function switchExhaust() {
-            document.getElementById('main-view').style.backgroundImage = "url('畫面6-2.png')";
-            document.getElementById('btn-exhaust').style.display = 'none';
-            document.getElementById('btn-air').style.display = 'block';
-            document.getElementById('msg').innerText = "步驟 4：請開啟「吹氣」開關";
-        }
+	function switchExhaust() {
+    	// 1. 切換背景底圖 (畫面6-2)
+    	document.getElementById('main-view').style.backgroundImage = "url('畫面6-2.png')";
+    
+    	// 2. 點亮排廢氣旁的指示燈
+    	document.getElementById('light-exhaust').style.display = 'block';
+    
+    	// 3. 切換按鈕引導
+    	document.getElementById('btn-exhaust').style.display = 'none';
+    	document.getElementById('btn-air').style.display = 'block';
+    
+    	document.getElementById('msg').innerText = "任務 4：排廢氣已啟動，請開啟「吹氣」開關";
+	}
 
-        function switchAir() {
-            document.getElementById('main-view').style.backgroundImage = "url('畫面6-3.png')";
-            document.getElementById('btn-air').style.display = 'none';
-            alert("✅ 系統就緒！");
-            startTask5();
-        }
+	function switchAir() {
+    	// 1. 切換背景底圖 (畫面6-3)
+    	document.getElementById('main-view').style.backgroundImage = "url('畫面6-3.png')";
+    
+    	// 2. 點亮吹氣旁的指示燈
+    	document.getElementById('light-air').style.display = 'block';
+    
+    	// 3. 隱藏按鈕進入下一步
+    	document.getElementById('btn-air').style.display = 'none';
+    
+    	alert("✅ 系統已就緒，按下「啟動」開始雷切！");
+    	startTask5();
+	}
 
         // 任務五
         function startTask5() {
