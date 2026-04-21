@@ -5,27 +5,15 @@
     <meta name="viewport" content="width=1000, user-scalable=yes">
     <title>RDWorks 雷射切割全流程模擬測驗</title>
     <style>
-        body {
- 	   margin: 0;
-    	   padding: 10px;
-           /* 確保內容水平置中，且不產生多餘的橫向捲軸 */
-           overflow-x: hidden; 
-           display: flex;
-           flex-direction: column;
-           align-items: center;
-	}
+        body { margin: 0; padding: 10px; overflow-x: hidden; display: flex; flex-direction: column; align-items: center; }
         
 	#main-view {
-    		position: relative;
-    		width: 1000px;
-		height: 563px;
-		background-size: 100% 100%;
-		/* 關鍵：如果螢幕寬度小於 1000px，寬度改為 95vw (螢幕寬度的95%) */
-		max-width: 98vw; 
-	        /* 關鍵：保持長寬比縮放 */
-    		aspect-ratio: 1000 / 563; 
-    		height: auto; /* 高度隨寬度自動調整 */
-	}
+            position: relative; width: 1000px; height: 563px;
+            background-image: url('畫面1.png'); background-size: 100% 100%;
+            max-width: 98vw; aspect-ratio: 1000 / 563; height: auto;
+            border: 3px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+
 	.hotspot { position: absolute; cursor: pointer; z-index: 10; transition: all 0.3s ease; }
         .modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
 
@@ -56,11 +44,7 @@
         /* 影片視窗 */
         #video-modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200; background: #000; border: 4px solid #fff; text-align: center; }
 
-	.hint-panel {
-    		width: 1000px;
-    		max-width: 98vw; /* 同步縮小提示面板 */
-    		box-sizing: border-box;
-	}
+        .hint-panel { margin-top: 20px; padding: 15px; background: white; border-left: 10px solid #2980b9; width: 1000px; max-width: 98vw; box-sizing: border-box; text-align: center; }
         #msg { font-size: 20px; font-weight: bold; }
 
 	/* 指示燈通用樣式 */
