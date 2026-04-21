@@ -143,6 +143,8 @@
         let currentStep = 1;
         let isFileSelected = false;
         let isOrigined = false;
+	let studentName = "";
+	const scriptURL = 'https://script.google.com/macros/s/AKfycbz8ozxOXagsY55I0Sn6PR_4CpIeEQJcSoKjBZK5QlckK6anFln36mkYZZxrVxdyi4gs/exec';
 
         const player = document.getElementById('player');
         const videoModal = document.getElementById('video-modal');
@@ -182,7 +184,18 @@
                 }, 100);
             }
         }
-        function handleSuccess() { if(document.getElementById('input-filename').value.trim()==="") return alert("請輸入名稱"); document.getElementById('name-dialog').style.display = 'none'; document.getElementById('success-dialog').style.display = 'block'; }
+	function handleSuccess() { 
+    	// 獲取輸入框的物件
+    	const nameInput = document.getElementById('input-filename');
+    	studentName = nameInput.value.trim(); // 將輸入的值存入變數並去除前後空格
+
+    	if(studentName === "") {
+        	return alert("請輸入名稱！"); 
+    	}
+
+    	document.getElementById('name-dialog').style.display = 'none'; 
+    	document.getElementById('success-dialog').style.display = 'block'; 
+	}
         function handleOverwriteAlert() { document.getElementById('success-dialog').style.display = 'none'; alert("注意：若有重名，請一律選擇[是]"); document.getElementById('overwrite-dialog').style.display = 'block'; document.getElementById('msg').innerText = "注意：若有重覆傳檔，請一律選擇「是」"; }
         
         // 任務三
@@ -259,13 +272,49 @@
             document.getElementById('msg').innerText = "步驟 7：請按下控制面板右下角的「啟動」開始雷切";
         }
 
-        function doFinalLaser() {
-            document.getElementById('btn-start-laser').style.display = 'none';
-            playVideo('影片2.mp4', "完成測驗，關閉視窗", function() {
-                alert("🎉 恭喜完成雷射切割全流程操作測驗！");
-                document.getElementById('msg').innerText = "測驗圓滿結束！";
-            });
-        }
+	function doFinalLaser22() {
+   	 document.getElementById('btn-start-laser').style.display = 'none';
+	// 取得學生輸入的名稱
+    	const userName = document.getElementById('input-filename').value;
+
+    	playVideo('影片2.mp4', "完成測驗，關閉視窗", function() {
+        	// 使用反引號 ` 來組合字串與變數 ${studentName}
+        	alert("🎉 恭喜 " + studentName + " 完成雷射切割全流程操作測驗！");
+        
+        	document.getElementById('msg').innerText = "班級座號：" + studentName + "同學，測驗圓滿結束！";
+
+        	// 如果你有串接 Google 試算表，也可以在這裡傳送資料
+        	// sendToGoogleSheet(studentName); 
+    	});
+	}
+	function doFinalLaser() {
+    	document.getElementById('btn-start-laser').style.display = 'none';
+    
+    	// 取得學生輸入的名稱
+    	const userName = document.getElementById('input-filename').value;
+
+    	playVideo('影片2.mp4', "完成測驗，關閉視窗", function() {
+        	// 影片播放完後，開始傳送資料
+        	fetch(scriptURL, {
+            	method: 'POST',
+            	mode: 'no-cors', // 避免跨網域問題
+            	cache: 'no-cache',
+            	headers: { 'Content-Type': 'application/json' },
+            	body: JSON.stringify({
+                	"userName": studentName,
+                	"status": "全部完成"
+            	})
+        	})
+        	.then(() => {
+            	alert("🎉 恭喜 " + studentName + " 完成雷射切割全流程操作測驗！");
+            	document.getElementById('msg').innerText =  "班級座號：" + studentName + "同學，測驗圓滿結束！";
+        	})
+        	.catch(error => {
+            	console.error('Error!', error.message);
+            	alert("資料傳送失敗，請聯絡老師。");
+        	});
+    	});
+	}
     </script>
 </body>
 </html>
